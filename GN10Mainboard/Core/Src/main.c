@@ -25,7 +25,54 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "app/app.hpp"
+#include "stdbool.h"
 /* USER CODE END Includes */
+ 
+ FDCAN_TxHeaderTypeDef TxHeader;
+  uint32_t TxMailbox;
+  uint16_t TxData[8];
+  
+void InitCAN()
+{
+
+  if(HAL_FDCAN_Start(&hfdcan1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
+}
+
+bool sendPacket(uint16_t can_id,uint8_t *tx_buffer,uint8_t data_length)
+{
+  if(data_length > 8)
+  {
+      return 0;
+  }
+  
+  TxHeader.Identifier = can_id;
+  TxHeader.IdType = FDCAN_STANDARD_ID;
+  TxHeader.TxFrameType = FDCAN_DATA_FRAME;
+  TxHeader.DataLength = data_length;
+  TxHeader.ErrorStateIndicator = FDCAN_ESI_ACTIVE;
+  TxHeader.BitRateSwitch = FDCAN_BRS_OFF;
+  TxHeader.FDFormat = FDCAN_CLASSIC_CAN;
+  TxHeader.TxEventFifoControl = FDCAN_NO_TX_EVENTS;
+  TxHeader.MessageMarker = 0;
+
+  if(0 < HAL_FDCAN_GetTxFifoFreeLevel(&hfdcan1))
+{
+   if(HAL_FDCAN_AddMessageToTxFifoQ(&hfdcan1, &TxHeader,tx_buffer) != HAL_OK)
+   {
+      return false;
+   }
+}
+
+else
+{
+  return false;
+}
+  return true;
+}
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
@@ -47,6 +94,7 @@
 /* USER CODE BEGIN PV */
 
 /* USER CODE END PV */
+
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
@@ -98,10 +146,9 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-    /* USER CODE END WHILE */
-
-    /* USER CODE BEGIN 3 */
-    run();
+    uint8_t tx_data[1] = 1;
+    sendPacket(0x00,tx_data,sizeof(tx_data));
+    HAL_Delay(1000);
   }
   /* USER CODE END 3 */
 }
