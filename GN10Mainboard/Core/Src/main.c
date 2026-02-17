@@ -126,6 +126,7 @@ int main(void)
   /* USER CODE BEGIN Init */
 
   /* USER CODE END Init */
+  InitCAN();
 
   /* Configure the system clock */
   SystemClock_Config();
