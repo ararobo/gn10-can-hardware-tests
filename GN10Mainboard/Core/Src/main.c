@@ -142,8 +142,8 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-    uint8_t tx_data = 1;
-    sendPacket(0x00, &tx_data, sizeof(tx_data));
+    char tx_data[] = "Hellow";
+    sendPacket(0x00, (uint8_t *)tx_data, sizeof(tx_data));
     HAL_Delay(1000);
   }
   /* USER CODE END 3 */
