@@ -123,8 +123,6 @@ int main(void)
   /* USER CODE BEGIN Init */
 
   /* USER CODE END Init */
-  InitCAN();
-
   /* Configure the system clock */
   SystemClock_Config();
 
@@ -137,7 +135,7 @@ int main(void)
   MX_FDCAN1_Init();
   MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
-
+  InitCAN();
   /* USER CODE END 2 */
 
   /* Infinite loop */
