@@ -58,8 +58,6 @@ void SystemClock_Config(void);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 FDCAN_TxHeaderTypeDef TxHeader;
-uint32_t TxMailbox;
-uint16_t TxData[8];
 
 void InitCAN()
 {
@@ -91,6 +89,7 @@ bool sendPacket(uint16_t can_id, uint8_t *tx_buffer, uint8_t data_length)
   {
     if (HAL_FDCAN_AddMessageToTxFifoQ(&hfdcan1, &TxHeader, tx_buffer) != HAL_OK)
     {
+      Error_Handler();
       return false;
     }
   }
@@ -135,6 +134,7 @@ int main(void)
   MX_FDCAN1_Init();
   MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
+  HAL_GPIO_WritePin(LED_GREEN_GPIO_Port, LED_GREEN_Pin, GPIO_PIN_SET);
   InitCAN();
   /* USER CODE END 2 */
 
@@ -208,6 +208,7 @@ void Error_Handler(void)
   __disable_irq();
   while (1)
   {
+    HAL_GPIO_WritePin(LED_RED_GPIO_Port, LED_RED_Pin, GPIO_PIN_SET);
   }
   /* USER CODE END Error_Handler_Debug */
 }
