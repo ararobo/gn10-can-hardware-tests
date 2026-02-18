@@ -19,6 +19,7 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "can.h"
+#include "usart.h"
 #include "gpio.h"
 
 /* Private includes ----------------------------------------------------------*/
@@ -50,6 +51,8 @@
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 /* USER CODE BEGIN PFP */
+void initCAN(void);
+HAL_StatusTypeDef sendPacket(uint16_t stdId, const uint8_t *data, uint8_t len);
 
 /* USER CODE END PFP */
 
@@ -61,16 +64,58 @@ CAN_TxHeaderTypeDef TxHeader;
 uint32_t TxMailbox;
 uint8_t RxData[8];
 bool RxFlag;
+
+void initCAN(void)
+{
+  RxFilter.FilterBank = 0;
+  RxFilter.FilterMode = CAN_FILTERMODE_IDMASK;
+  RxFilter.FilterScale = CAN_FILTERSCALE_32BIT;
+  RxFilter.FilterIdHigh = 0x0000;
+  RxFilter.FilterIdLow = 0x0000;
+  RxFilter.FilterMaskIdHigh = 0x0000;
+  RxFilter.FilterMaskIdLow = 0x0000;
+  RxFilter.FilterFIFOAssignment = CAN_RX_FIFO0;
+  RxFilter.FilterActivation = ENABLE;
+  RxFilter.SlaveStartFilterBank = 14;
+
+  if (HAL_CAN_ConfigFilter(&hcan, &RxFilter) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
+  if (HAL_CAN_Start(&hcan) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
+  if (HAL_CAN_ActivateNotification(&hcan, CAN_IT_RX_FIFO0_MSG_PENDING) != HAL_OK)
+  {
+    Error_Handler();
+  }
+}
+
+HAL_StatusTypeDef sendPacket(uint16_t stdId, const uint8_t *data, uint8_t data_length)
+{
+  if (data_length > 8)
+  {
+    return 0;
+  }
+
+  TxHeader.StdId = stdId;
+  TxHeader.ExtId = 0;
+  TxHeader.IDE = CAN_ID_STD;
+  TxHeader.RTR = CAN_RTR_DATA;
+  TxHeader.DLC = data_length;
+  TxHeader.TransmitGlobalTime = DISABLE;
+
+  return HAL_CAN_AddTxMessage(&hcan, &TxHeader, (uint8_t *)data, &TxMailbox);
+}
 /* USER CODE END 0 */
 
 /**
   * @brief  The application entry point.
   * @retval int
   */
-void initCAN(){}
-
-bool sendPacket(){}
-
 int main(void)
 {
 
@@ -97,20 +142,9 @@ int main(void)
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_CAN_Init();
+  MX_USART1_UART_Init();
   /* USER CODE BEGIN 2 */
-  RxFilter.FilterIdHigh = 0;
-  RxFilter.FilterIdLow = 0;
-  RxFilter.FilterMaskIdHigh = 0;
-  RxFilter.FilterMaskIdLow = 0;
-  RxFilter.FilterScale = CAN_FILTERSCALE_32BIT;
-  RxFilter.FilterBank = 0;
-  RxFilter.FilterMode = CAN_FILTERMODE_IDMASK;
-  RxFilter.SlaveStartFilterBank = 14;
-  RxFilter.FilterActivation = ENABLE;
-
-  HAL_CAN_Start(&hcan);
-  HAL_CAN_ConfigFilter(&hcan,&RxFilter);
-  HAL_CAN_ActivateNotification(&hcan,CAN_IT_RX_FIFO0_MSG_PENDING);
+  initCAN();
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -120,6 +154,9 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
+    uint8_t tx_data[1] = {1};
+    sendPacket(0x123, tx_data, sizeof(tx_data));
+    HAL_Delay(1000);
   }
   /* USER CODE END 3 */
 }
@@ -132,6 +169,7 @@ void SystemClock_Config(void)
 {
   RCC_OscInitTypeDef RCC_OscInitStruct = {0};
   RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
+  RCC_PeriphCLKInitTypeDef PeriphClkInit = {0};
 
   /** Initializes the RCC Oscillators according to the specified parameters
   * in the RCC_OscInitTypeDef structure.
@@ -156,17 +194,28 @@ void SystemClock_Config(void)
   {
     Error_Handler();
   }
+  PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_USART1;
+  PeriphClkInit.Usart1ClockSelection = RCC_USART1CLKSOURCE_PCLK1;
+  if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit) != HAL_OK)
+  {
+    Error_Handler();
+  }
 }
 
 /* USER CODE BEGIN 4 */
 void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)
 {
-  if (HAL_CAN_GetRXMessage(hcan,CAN_RX_FIFO0,&RxHeader,RxData) == HAL_OK)
+  if (HAL_CAN_GetRxMessage(hcan,CAN_RX_FIFO0,&RxHeader,RxData) == HAL_OK)
   {
-    classifyData(RxHeader,StdId,RxData,RxHeader.DLC);
+    //c言語のptrintfっぽいのをuartで垂れ流す
+    HAL_UART_Transmit(&huart1,RxData,8,1000); //UARTにRxで受信したデータを流す
+    char a = '\n';
+    HAL_UART_Transmit(&huart1,(uint8_t *)&a,1,1000);//そのままだと改行がないためどこがはじめでどこが最後かわからなくなってしまうので改行をa(char)で垂れ流す。
   }
   
 }
+
+
 /* USER CODE END 4 */
 
 /**
