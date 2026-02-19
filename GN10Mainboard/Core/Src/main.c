@@ -58,11 +58,29 @@ void SystemClock_Config(void);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 FDCAN_TxHeaderTypeDef TxHeader;
-
+FDCAN_FilterTypeDef RxFilter;
+FDCAN_RxHeaderTypeDef RxHeader;
+uint8_t RxData[8];
+bool Rxflag;
 void InitCAN()
 {
 
+  RxFilter.FilterConfig = FDCAN_FILTER_TO_RXFIFO0;
+  RxFilter.FilterID1 = 0x00;
+  RxFilter.FilterID2 = 0x00;
+  RxFilter.IdType = FDCAN_STANDARD_ID;
+  RxFilter.FilterType = FDCAN_FILTER_MASK;
+  RxFilter.FilterIndex = 0;
+
+  if (HAL_FDCAN_ConfigFilter(&hfdcan1, &RxFilter) != HAL_OK)
+  {
+    Error_Handler();
+  }
   if (HAL_FDCAN_Start(&hfdcan1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  if (HAL_FDCAN_ActivateNotification(&hfdcan1, FDCAN_IT_RX_FIFO0_NEW_MESSAGE, 0) != HAL_OK)
   {
     Error_Handler();
   }
@@ -136,6 +154,7 @@ int main(void)
   /* USER CODE BEGIN 2 */
   HAL_GPIO_WritePin(LED_GREEN_GPIO_Port, LED_GREEN_Pin, GPIO_PIN_SET);
   InitCAN();
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -144,6 +163,11 @@ int main(void)
   {
     char tx_data[] = "Hellow";
     sendPacket(0x00, (uint8_t *)tx_data, sizeof(tx_data));
+    if (Rxflag)
+    {
+      HAL_UART_Transmit(&huart2, RxData, 8, 10);
+      Rxflag = false;
+    }
     HAL_Delay(1000);
   }
   /* USER CODE END 3 */
@@ -194,7 +218,23 @@ void SystemClock_Config(void)
 }
 
 /* USER CODE BEGIN 4 */
-
+void HAL_FDCAN_RxFifo0Callback(FDCAN_HandleTypeDef *hfdcan, uint32_t Rxfifo)
+{
+  if (hfdcan->Instance == hfdcan1.Instance)
+  {
+    if (Rxfifo != 0)
+    {
+      if (HAL_FDCAN_GetRxMessage(hfdcan, FDCAN_RX_FIFO0, &RxHeader, RxData) != HAL_OK)
+      {
+        Error_Handler();
+      }
+      else
+      {
+        Rxflag = true;
+      }
+    }
+  }
+}
 /* USER CODE END 4 */
 
 /**
