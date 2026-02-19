@@ -145,7 +145,7 @@ int main(void)
   MX_USART1_UART_Init();
   /* USER CODE BEGIN 2 */
   initCAN();
-  char b = 'd';
+  char b = '\'';
   HAL_UART_Transmit(&huart1, (uint8_t *)&b, 1, 1000);
 
   /* USER CODE END 2 */
