@@ -178,9 +178,12 @@ int main(void)
   MX_TIM2_Init();
   /* USER CODE BEGIN 2 */
   initCAN();
-  HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_1);
-  HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_2);
-  Motor_SetDutyPercent(50);
+  HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_1); // 正転用のPWMを開始(htim2のチャンネル1にはモーターの正転用のPWMが設定されている)
+  HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_2); // 逆転用のPWMを開始
+  Motor_SetDutyPercent(-100);               // Motor_SetDutyPercentはモーターの回転速度と回転方向を設定する関数。引数は-100から100の範囲で、正の値が正転、負の値が逆転を表す。ここでは-100を指定しているため、モーターは最大速度で逆転する。
+  /*duty_percent	0～100	正転（チャネル1でPWM出力）
+  duty_percent	-100～0	逆転（チャネル2でPWM出力）
+  duty_percent	0	モーター停止*/
   char b = '\'';
   HAL_UART_Transmit(&huart1, (uint8_t *)&b, 1, 1000);
 
