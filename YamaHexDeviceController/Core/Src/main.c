@@ -19,6 +19,7 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "can.h"
+#include "tim.h"
 #include "usart.h"
 #include "gpio.h"
 
@@ -34,6 +35,8 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
+#define MOTOR_DUTY_MIN_PERCENT (-100)
+#define MOTOR_DUTY_MAX_PERCENT (100)
 
 /* USER CODE END PD */
 
@@ -53,6 +56,7 @@ void SystemClock_Config(void);
 /* USER CODE BEGIN PFP */
 void initCAN(void);
 HAL_StatusTypeDef sendPacket(uint16_t stdId, const uint8_t *data, uint8_t len);
+void Motor_SetDutyPercent(int8_t duty_percent);
 
 /* USER CODE END PFP */
 
@@ -91,6 +95,34 @@ void initCAN(void)
   if (HAL_CAN_ActivateNotification(&hcan, CAN_IT_RX_FIFO0_MSG_PENDING) != HAL_OK)
   {
     Error_Handler();
+  }
+}
+void Motor_SetDutyPercent(int8_t duty_percent)
+{
+  uint32_t arr = __HAL_TIM_GET_AUTORELOAD(&htim2) + 1U;
+  uint32_t pulse = 0U;
+  int32_t limited = duty_percent;
+
+  if (limited > MOTOR_DUTY_MAX_PERCENT)
+  {
+    limited = MOTOR_DUTY_MAX_PERCENT;
+  }
+  else if (limited < MOTOR_DUTY_MIN_PERCENT)
+  {
+    limited = MOTOR_DUTY_MIN_PERCENT;
+  }
+
+  if (limited >= 0)
+  {
+    pulse = (uint32_t)((limited * (int32_t)arr) / MOTOR_DUTY_MAX_PERCENT);
+    __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, pulse);
+    __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_2, 0U);
+  }
+  else
+  {
+    pulse = (uint32_t)(((-limited) * (int32_t)arr) / MOTOR_DUTY_MAX_PERCENT);
+    __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_1, 0U);
+    __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_2, pulse);
   }
 }
 
@@ -143,8 +175,12 @@ int main(void)
   MX_GPIO_Init();
   MX_CAN_Init();
   MX_USART1_UART_Init();
+  MX_TIM2_Init();
   /* USER CODE BEGIN 2 */
   initCAN();
+  HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_1);
+  HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_2);
+  Motor_SetDutyPercent(50);
   char b = '\'';
   HAL_UART_Transmit(&huart1, (uint8_t *)&b, 1, 1000);
 
@@ -154,6 +190,7 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
