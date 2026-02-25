@@ -250,11 +250,22 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)
 
   if (HAL_CAN_GetRxMessage(hcan, CAN_RX_FIFO0, &RxHeader, RxData) == HAL_OK)
   {
+    int16_t data = (int16_t)(((uint16_t)RxData[1] << 8) | RxData[0]); // 受信したデータを16ビットの整数に変換
+    // c言語のptrintfっぽいのをuartで垂れ流す
+    HAL_UART_Transmit(&huart1, (uint8_t *)&data, sizeof(data), 1000); // UARTにRxで受信したデータを流す
+    char a = '\n';
+    HAL_UART_Transmit(&huart1, (uint8_t *)&a, 1, 1000); // そのままだと改行がないためどこがはじめでどこが最後かわからなくなってしまうので改行をa(char)で垂れ流す。
+  }
+  /*
+  //文字列用なのでコメントアウトしておきます
+  if (HAL_CAN_GetRxMessage(hcan, CAN_RX_FIFO0, &RxHeader, RxData) == HAL_OK)
+  {
     // c言語のptrintfっぽいのをuartで垂れ流す
     HAL_UART_Transmit(&huart1, RxData, 8, 1000); // UARTにRxで受信したデータを流す
     char a = '\n';
     HAL_UART_Transmit(&huart1, (uint8_t *)&a, 1, 1000); // そのままだと改行がないためどこがはじめでどこが最後かわからなくなってしまうので改行をa(char)で垂れ流す。
   }
+  */
 }
 
 /* USER CODE END 4 */

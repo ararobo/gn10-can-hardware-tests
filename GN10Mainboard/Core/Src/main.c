@@ -161,6 +161,23 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+    int16_t data = 418;
+    uint16_t udata = (uint16_t)data;
+    uint8_t send[2] = {(uint8_t)(udata & 0xFF),(uint8_t)((udata >> 8) & 0xFF)};
+    sendPacket(0x01, send, 2);
+  
+  if (Rxflag)
+  {
+    HAL_UART_Transmit(&huart2, RxData, 8, 10);
+    Rxflag = false;
+  }
+  HAL_Delay(1000);
+  }
+  
+  
+  /*
+  while (1)
+  {
     char tx_data[] = "Hellow";
     sendPacket(0x00, (uint8_t *)tx_data, sizeof(tx_data));
     if (Rxflag)
@@ -169,7 +186,7 @@ int main(void)
       Rxflag = false;
     }
     HAL_Delay(1000);
-  }
+  }*/
   /* USER CODE END 3 */
 }
 
