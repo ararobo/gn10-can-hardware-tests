@@ -163,18 +163,19 @@ int main(void)
   {
     int16_t data = 418;
     uint16_t udata = (uint16_t)data;
-    uint8_t send[2] = {(uint8_t)(udata & 0xFF),(uint8_t)((udata >> 8) & 0xFF)};
+    uint8_t send[2];
+    send[0] = (uint8_t)(udata >> 8);
+    send[1] = (uint8_t)(udata & 0xFF);
     sendPacket(0x01, send, 2);
-  
-  if (Rxflag)
-  {
-    HAL_UART_Transmit(&huart2, RxData, 8, 10);
-    Rxflag = false;
+
+    if (Rxflag)
+    {
+      HAL_UART_Transmit(&huart2, RxData, 8, 10);
+      Rxflag = false;
+    }
+    HAL_Delay(1000);
   }
-  HAL_Delay(1000);
-  }
-  
-  
+
   /*
   while (1)
   {
