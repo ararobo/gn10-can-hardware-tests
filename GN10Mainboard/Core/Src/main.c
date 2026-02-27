@@ -164,8 +164,8 @@ int main(void)
     int16_t data = 418;
     uint16_t udata = (uint16_t)data;
     uint8_t send[2];
-    send[0] = (uint8_t)(udata >> 8);
-    send[1] = (uint8_t)(udata & 0xFF);
+    send[0] = (uint8_t)(udata & 0xFF);
+    send[1] = (uint8_t)(udata >> 8);
     sendPacket(0x01, send, 2);
 
     if (Rxflag)
